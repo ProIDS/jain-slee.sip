@@ -139,6 +139,7 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 	private String sipBalancerHeartBeatServiceClassName;
 	private String balancers;
 	private String loadBalancerElector;
+	boolean raIsStopping = false;
 	/**
 	 * default is true;
 	 */
@@ -351,7 +352,15 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 			}			
 			return true;
 		} catch (Exception e) {
-			tracer.severe(e.getMessage(),e);
+			if (raIsStopping) {
+				if (tracer.isFinestEnabled()) {
+					tracer.finest("skip end activity error in graceful shutdown mode: "+e.getMessage(), e);
+				}
+				return true;
+			}
+			else {
+				tracer.severe(e.getMessage(), e);
+			}
 		}
 		return false;
 	}
@@ -484,12 +493,15 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 				stw = new ServerTransactionWrapper(st, this);
 			}
 		}
-		
+		boolean isNewActivity = false;
 		Wrapper activity = dw;
 		if (activity == null) {
-			activity = stw;
-			stw.setActivity(true);
-			addActivity(activity);
+			isNewActivity = true;
+			if (!raIsStopping) {
+				activity = stw;
+				stw.setActivity(true);
+				addActivity(activity);
+			}
 		}
 		
 		int eventFlags = DEFAULT_EVENT_FLAGS;
@@ -500,7 +512,7 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 		
 		final FireableEventType eventType = eventIdCache.getEventId(eventLookupFacility, req.getRequest(), dw != null);
 		final RequestEventWrapper rew = new RequestEventWrapper(this.providerWrapper,stw,dw,req.getRequest());
-		
+
 		if (eventIDFilter.filterEvent(eventType)) {
 			if (tracer.isFineEnabled()) {
 				tracer.fine("Event " + (eventType==null?"null":eventType.getEventType()) + " filtered");
@@ -512,7 +524,18 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 				tracer.severe("failed to terminate server tx", e);
 			}
 			processTransactionTerminated(stw);
-		} else {
+		}
+		else if (raIsStopping && isNewActivity){
+			CallIdHeader callIdHeader = (CallIdHeader) req.getRequest().getHeader(CallIdHeader.NAME);
+			tracer.warning("RA is in graceful shutdown mode, dropping new activity (method="+req.getRequest().getMethod()+", callId=" + callIdHeader.getCallId());
+			try {
+				stw.terminate();
+			} catch (ObjectInUseException e) {
+				tracer.severe("failed to terminate server tx", e);
+			}
+			processTransactionTerminated(stw);
+		}
+		else {
 			try {
 				fireEvent(activity.getActivityHandle(), eventType, rew, activity.getEventFiringAddress(), eventFlags);			
 			} catch (Throwable e) {
@@ -1168,6 +1191,18 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 			}
 			return true;
 		}
+		catch (IllegalStateException iex){
+			if (raIsStopping) {
+				if(tracer.isFineEnabled()) {
+					tracer.fine("Skipping activity start", iex);
+				}
+				return true;
+			}
+			else {
+				tracer.severe("Failed to start activity",iex);
+				return false;
+			}
+		}
 		catch (Throwable e) {
 			tracer.severe("Failed to start activity",e);
 			return false;
@@ -1280,7 +1315,7 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 		if (tracer.isFineEnabled()) {
 			tracer.fine("Sip Resource Adaptor entity active.");
 		}	
-		
+		raIsStopping = false;
 	}
 	
 	/*
@@ -1329,7 +1364,7 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 		if (tracer.isFineEnabled()) {
 			tracer.fine("Object for entity named "+raContext.getEntityName()+" is stopping. "+activityManagement);
 		}
-		
+		raIsStopping = true;
 	}
 	
 	//	EVENT PROCESSING CALLBACKS
