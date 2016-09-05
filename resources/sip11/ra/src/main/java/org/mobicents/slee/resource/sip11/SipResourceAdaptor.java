@@ -28,15 +28,29 @@ import gov.nist.javax.sip.message.SIPResponse;
 import gov.nist.javax.sip.stack.SIPClientTransaction;
 import gov.nist.javax.sip.stack.SIPServerTransaction;
 import gov.nist.javax.sip.stack.SIPTransaction;
-
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import net.java.slee.resource.sip.CancelRequestEvent;
+import net.java.slee.resource.sip.DialogForkedEvent;
+import net.java.slee.resource.sip.DialogTimeoutEvent;
+import org.mobicents.ha.javax.sip.ClusteredSipStack;
+import org.mobicents.ha.javax.sip.LoadBalancerElector;
+import org.mobicents.ha.javax.sip.cache.SipResourceAdaptorMobicentsSipCache;
+import org.mobicents.slee.container.resource.GracefullyStopableResourceAdaptor;
+import org.mobicents.slee.container.resource.SleeEndpoint;
+import org.mobicents.slee.resource.cluster.FaultTolerantResourceAdaptor;
+import org.mobicents.slee.resource.cluster.FaultTolerantResourceAdaptorContext;
+import org.mobicents.slee.resource.sip11.wrappers.ACKDummyTransaction;
+import org.mobicents.slee.resource.sip11.wrappers.ClientDialogWrapper;
+import org.mobicents.slee.resource.sip11.wrappers.ClientTransactionWrapper;
+import org.mobicents.slee.resource.sip11.wrappers.DialogWrapper;
+import org.mobicents.slee.resource.sip11.wrappers.DialogWrapperAppData;
+import org.mobicents.slee.resource.sip11.wrappers.RequestEventWrapper;
+import org.mobicents.slee.resource.sip11.wrappers.ResponseEventWrapper;
+import org.mobicents.slee.resource.sip11.wrappers.ServerTransactionWrapper;
+import org.mobicents.slee.resource.sip11.wrappers.ServerTransactionWrapperAppData;
+import org.mobicents.slee.resource.sip11.wrappers.TimeoutEventWrapper;
+import org.mobicents.slee.resource.sip11.wrappers.TransactionWrapper;
+import org.mobicents.slee.resource.sip11.wrappers.TransactionWrapperAppData;
+import org.mobicents.slee.resource.sip11.wrappers.Wrapper;
 
 import javax.sip.ClientTransaction;
 import javax.sip.Dialog;
@@ -88,32 +102,16 @@ import javax.slee.resource.Marshaler;
 import javax.slee.resource.ReceivableService;
 import javax.slee.resource.ResourceAdaptorContext;
 import javax.slee.resource.UnrecognizedActivityHandleException;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 
-import net.java.slee.resource.sip.CancelRequestEvent;
-import net.java.slee.resource.sip.DialogForkedEvent;
-import net.java.slee.resource.sip.DialogTimeoutEvent;
-
-import org.mobicents.ha.javax.sip.ClusteredSipStack;
-import org.mobicents.ha.javax.sip.LoadBalancerElector;
-import org.mobicents.ha.javax.sip.cache.SipResourceAdaptorMobicentsSipCache;
-import org.mobicents.slee.container.resource.SleeEndpoint;
-import org.mobicents.slee.resource.cluster.FaultTolerantResourceAdaptor;
-import org.mobicents.slee.resource.cluster.FaultTolerantResourceAdaptorContext;
-import org.mobicents.slee.resource.sip11.wrappers.ACKDummyTransaction;
-import org.mobicents.slee.resource.sip11.wrappers.ClientDialogWrapper;
-import org.mobicents.slee.resource.sip11.wrappers.ClientTransactionWrapper;
-import org.mobicents.slee.resource.sip11.wrappers.DialogWrapper;
-import org.mobicents.slee.resource.sip11.wrappers.DialogWrapperAppData;
-import org.mobicents.slee.resource.sip11.wrappers.RequestEventWrapper;
-import org.mobicents.slee.resource.sip11.wrappers.ResponseEventWrapper;
-import org.mobicents.slee.resource.sip11.wrappers.ServerTransactionWrapper;
-import org.mobicents.slee.resource.sip11.wrappers.ServerTransactionWrapperAppData;
-import org.mobicents.slee.resource.sip11.wrappers.TimeoutEventWrapper;
-import org.mobicents.slee.resource.sip11.wrappers.TransactionWrapper;
-import org.mobicents.slee.resource.sip11.wrappers.TransactionWrapperAppData;
-import org.mobicents.slee.resource.sip11.wrappers.Wrapper;
-
-public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceAdaptor<SipActivityHandle, String> {
+public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceAdaptor<SipActivityHandle, String>, GracefullyStopableResourceAdaptor {
 
 	// Config Properties Names -------------------------------------------
 
@@ -354,8 +352,9 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 		} catch (Exception e) {
 			if (raIsStopping) {
 				if (tracer.isFinestEnabled()) {
-					tracer.finest("skip end activity error in graceful shutdown mode: "+e.getMessage(), e);
+					tracer.finest("Activity error in graceful shutdown mode (remove activity and continue): "+e.getMessage(), e);
 				}
+				activityEnded(activity.getActivityHandle());
 				return true;
 			}
 			else {
@@ -1194,7 +1193,7 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 		catch (IllegalStateException iex){
 			if (raIsStopping) {
 				if(tracer.isFineEnabled()) {
-					tracer.fine("Skipping activity start", iex);
+					tracer.fine("Graceful shutdown mode - skipping activity start error", iex);
 				}
 				return true;
 			}
@@ -1366,7 +1365,18 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 		}
 		raIsStopping = true;
 	}
-	
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.mobicents.slee.container.resource.GracefullyStopableResourceAdaptor#gracefulRaStopping()
+	 */
+	public void gracefulRaStopping() {
+		if (tracer.isFineEnabled()) {
+			tracer.fine("Graceful stop requested for "+raContext.getEntityName());
+		}
+		raStopping();
+	}
+
 	//	EVENT PROCESSING CALLBACKS
 	
     /*
@@ -1822,4 +1832,5 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 	public void unsetFaultTolerantResourceAdaptorContext() {
 		this.ftRaContext = null;
 	}
+
 }
