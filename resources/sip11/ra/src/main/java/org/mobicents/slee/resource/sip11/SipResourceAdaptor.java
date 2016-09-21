@@ -528,6 +528,12 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 			CallIdHeader callIdHeader = (CallIdHeader) req.getRequest().getHeader(CallIdHeader.NAME);
 			tracer.warning("RA is in graceful shutdown mode, dropping new activity (method="+req.getRequest().getMethod()+", callId=" + callIdHeader.getCallId());
 			try {
+				Response rejectResponse = this.providerWrapper.getMessageFactory().createResponse(Response.SERVICE_UNAVAILABLE, req.getRequest());
+				stw.sendResponse(rejectResponse);
+			} catch (Exception e) {
+				tracer.severe("failed to send 503 response for rejected session", e);
+			}
+			try {
 				stw.terminate();
 			} catch (ObjectInUseException e) {
 				tracer.severe("failed to terminate server tx", e);
