@@ -1328,30 +1328,34 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 	 * @see javax.slee.resource.ResourceAdaptor#raInactive()
 	 */
 	public void raInactive() {
-		
-		this.provider.removeSipListener(this);
-		
-		ListeningPoint[] listeningPoints = this.provider.getListeningPoints();
-		
-		for (int i = 0; i < listeningPoints.length; i++) {
-			ListeningPoint lp = listeningPoints[i];
-			for (int k = 0; k < 10; k++) {
-				try {
-					this.sipStack.deleteListeningPoint(lp);
-					this.sipStack.deleteSipProvider(this.provider);
-					break;
-				} catch (ObjectInUseException ex) {
-					tracer
-							.severe(
-									"Object in use -- retrying to delete listening point",
-									ex);
-					try {
-						Thread.sleep(100);
-					} catch (Exception e) {
 
+		if(this.provider != null) {
+			this.provider.removeSipListener(this);
+
+			ListeningPoint[] listeningPoints = this.provider.getListeningPoints();
+
+			for (int i = 0; i < listeningPoints.length; i++) {
+				ListeningPoint lp = listeningPoints[i];
+				for (int k = 0; k < 10; k++) {
+					try {
+						this.sipStack.deleteListeningPoint(lp);
+						this.sipStack.deleteSipProvider(this.provider);
+						break;
+					} catch (ObjectInUseException ex) {
+						tracer
+								.severe(
+										"Object in use -- retrying to delete listening point",
+										ex);
+						try {
+							Thread.sleep(100);
+						} catch (Exception e) {
+
+						}
 					}
 				}
 			}
+		} else {
+			tracer.warning("Sip Resource Adaptor provider is null while deactivating.");
 		}
 
 		this.providerWrapper.raInactive();
