@@ -4,7 +4,7 @@
 	<parent>
 		<artifactId>restcomm-slee-example-sip-jdbc-registrar-docs</artifactId>
 		<groupId>org.mobicents.examples</groupId>
-		<version>proids-2.8.0</version>
+		<version>proids-2.8.1-SNAPSHOT</version>
 	</parent>
 	
 	<artifactId>restcomm-slee-example-sip-jdbc-registrar-docs-jdocbook-restcomm</artifactId>

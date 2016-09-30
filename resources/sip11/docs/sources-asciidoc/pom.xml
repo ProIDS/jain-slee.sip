@@ -6,7 +6,7 @@
 	<parent>
 		<artifactId>restcomm-slee-ra-sip11-docs</artifactId>
 		<groupId>org.mobicents.resources</groupId>
-		<version>proids-2.8.0</version>
+		<version>proids-2.8.1-SNAPSHOT</version>
 	</parent>
 		
 	<artifactId>restcomm-slee-ra-sip11-docs-sources-asciidoc</artifactId>

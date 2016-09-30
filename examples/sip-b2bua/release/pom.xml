@@ -6,7 +6,7 @@
 	<parent>
 		<artifactId>restcomm-slee-example-sip11-b2b</artifactId>
 		<groupId>org.mobicents.examples</groupId>
-		<version>proids-2.8.0</version>
+		<version>proids-2.8.1-SNAPSHOT</version>
 	</parent>
 	
 	<artifactId>restcomm-slee-example-sip11-b2b-release</artifactId>
