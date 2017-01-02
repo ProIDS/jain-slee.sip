@@ -20,7 +20,7 @@
 		<restcomm.jain.sip.ha.version>1.5.19</restcomm.jain.sip.ha.version>
 		<restcomm.loadbalancer.version>2.0.22</restcomm.loadbalancer.version>
 
-		<jain-sip-ri.version>1.2.X-SNAPSHOT</jain-sip-ri.version>
+		<jain-sip-ri.version>1.2.322</jain-sip-ri.version>
 	</properties>
 	
 	<modules>
