@@ -38,3 +38,4 @@ examples/sip-uas/docs/sources-restcomm/src/
 examples/sip-wake-up/docs/sources-restcomm/src/
 enablers/sip-publication-client/docs/sources-restcomm/src/
 enablers/sip-subscription-client/docs/sources-restcomm/src/
+*.versionsBackup

@@ -59,7 +59,12 @@
             <dependency>
                 <groupId>org.mobicents.servers.jainslee.core</groupId>
                 <artifactId>spi</artifactId>
-                <version>${restcomm.jain.slee.version}</version>
+                <version>${restcomm.jain.slee.proids.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mobicents.cluster</groupId>
+                <artifactId>core</artifactId>
+                <version>${restcomm.jain.slee.core.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mobicents.tools</groupId>

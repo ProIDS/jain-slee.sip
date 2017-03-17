@@ -14,8 +14,10 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<restcomm.jain.slee.version>proids-2.8.0</restcomm.jain.slee.version>
+		<restcomm.jain.slee.version>2.8.27</restcomm.jain.slee.version>
+		<restcomm.jain.slee.core.version>6.1.4.22</restcomm.jain.slee.core.version>
 		<restcomm.jain.slee.jdbc.version>2.8.12</restcomm.jain.slee.jdbc.version>
+		<restcomm.jain.slee.proids.version>proids-2.8.0</restcomm.jain.slee.proids.version>
 		<restcomm.jain.sip.ext.version>1.3.23</restcomm.jain.sip.ext.version>
 		<restcomm.jain.sip.ha.version>1.5.19</restcomm.jain.sip.ha.version>
 		<restcomm.loadbalancer.version>2.0.22</restcomm.loadbalancer.version>
@@ -75,6 +77,24 @@
 				<groupId>org.powermock</groupId>
 				<artifactId>powermock-module-junit4</artifactId>
 				<version>1.6.5</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.powermock</groupId>
+				<artifactId>powermock-reflect</artifactId>
+				<version>1.6.5</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.powermock</groupId>
+				<artifactId>powermock-core</artifactId>
+				<version>1.6.5</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>javassist</groupId>
+				<artifactId>javassist</artifactId>
+				<version>3.12.1.GA</version>
 				<scope>test</scope>
 			</dependency>
 		</dependencies>

@@ -12,6 +12,10 @@
 	
     <dependencies>
         <dependency>
+            <groupId>org.mobicents.cluster</groupId>
+            <artifactId>core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.mobicents.ha.javax.sip</groupId>
             <artifactId>restcomm-jain-sip-jboss5</artifactId>
         </dependency>

@@ -12,7 +12,6 @@ import org.mockito.stubbing.Answer;
 import org.powermock.reflect.Whitebox;
 
 import javax.sip.ListeningPoint;
-import javax.sip.SipFactory;
 import javax.slee.facilities.Tracer;
 import javax.slee.resource.ConfigProperties;
 import javax.slee.resource.ConfigProperties.Property;
