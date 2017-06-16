@@ -571,12 +571,13 @@ public class SipResourceAdaptor implements SipListenerExt,FaultTolerantResourceA
 		final ResponseEventExt responseEventExt = (ResponseEventExt)responseEvent;
 		
 		if (responseEventExt.isRetransmission() && responseEventExt.getDialog() != null) {
-			if (tracer.isInfoEnabled()) {
-				tracer.info("Dropping in dialog retransmission. Response:\n"+responseEventExt.getResponse());
-			}
-			return;
-		}		
-		
+			tracer.info("Suspected in dialog retransmission. Response:" + responseEventExt.getResponse());
+		}
+
+		if(tracer.isFinerEnabled()) {
+			tracer.finer("Response forked: " + responseEventExt.isForkedResponse() + " responseEventExt: " + responseEventExt);
+		}
+
 		if(responseEventExt.isForkedResponse()) {
 			processResponseEventForked(responseEventExt);	 			
 		}
